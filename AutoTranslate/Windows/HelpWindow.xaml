@@ -38,7 +38,8 @@
         </Style>
     </Window.Resources>
     
-    <TabControl Margin="15">
+    <Grid>
+        <TabControl Margin="15">
         
         <!-- Getting Started Tab -->
         <TabItem Header="Getting Started">
@@ -198,12 +199,13 @@
             </ScrollViewer>
         </TabItem>
         
-    </TabControl>
-    
-    <!-- Close Button -->
-    <Button Name="CloseButton" Content="Close" Click="Close_Click" 
-            Padding="20,8" Margin="15" VerticalAlignment="Bottom" HorizontalAlignment="Right"
-            Background="#5E81AC" Foreground="White" BorderThickness="0"
-            MinWidth="100"/>
+        </TabControl>
+        
+        <!-- Close Button -->
+        <Button Name="CloseButton" Content="Close" Click="Close_Click" 
+                Padding="20,8" Margin="15" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                Background="#5E81AC" Foreground="White" BorderThickness="0"
+                MinWidth="100"/>
+    </Grid>
     
 </Window>
