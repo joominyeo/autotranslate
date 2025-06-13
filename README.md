@@ -287,6 +287,198 @@ We welcome suggestions for new features and improvements.
 - Windows 10 or later
 - Visual Studio 2022 or compatible IDE
 
+## Building and Deployment
+
+### Prerequisites
+
+1. **Install .NET 8 SDK**
+   - Download from [Microsoft .NET Downloads](https://dotnet.microsoft.com/download/dotnet/8.0)
+   - Verify installation: `dotnet --version`
+
+2. **Install WiX Toolset (for .msi installer)**
+   - Download from [WiX Toolset](https://wixtoolset.org/releases/)
+   - Or install via Visual Studio extension
+
+### Quick Build
+
+For a simple build to test the application:
+
+```bash
+# Navigate to project directory
+cd AutoTranslate
+
+# Build the project
+dotnet build --configuration Release
+```
+
+The executable will be available at:
+`AutoTranslate\bin\Release\net8.0-windows\AutoTranslate.exe`
+
+### Production Build
+
+Use the provided build script for a complete production build:
+
+```bash
+# Run the build script
+build.bat
+```
+
+This will:
+- Restore NuGet packages
+- Build in Release configuration
+- Display the output path for the executable
+
+### Creating Distribution Packages
+
+#### Automated Deployment
+
+Use the deployment script to create both portable and installer packages:
+
+```bash
+# Run the deployment script
+deploy.bat
+```
+
+This creates:
+- **Portable Version**: `Deploy\AutoTranslate-Portable.zip`
+- **Installer Files**: `Deploy\Installer\` (ready for .msi creation)
+- **Documentation**: `Deploy\README.md`
+
+#### Manual Deployment Steps
+
+1. **Build Release Version**
+   ```bash
+   dotnet clean --configuration Release
+   dotnet restore
+   dotnet build --configuration Release
+   ```
+
+2. **Create Portable Package**
+   ```bash
+   # Copy all files from bin\Release\net8.0-windows\ to a new folder
+   # Compress into AutoTranslate-Portable.zip
+   ```
+
+3. **Prepare for Installer**
+   ```bash
+   # Copy executable and dependencies to installer staging folder
+   # Include icon.ico and README.md
+   ```
+
+### Creating MSI Installer
+
+#### Using WiX Toolset
+
+1. **Create WiX Project File** (`AutoTranslate.wxs`):
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+     <Product Id="*" Name="AutoTranslate" Language="1033" Version="1.0.0.0" 
+              Manufacturer="AutoTranslate" UpgradeCode="YOUR-UPGRADE-CODE">
+       <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+       
+       <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+       <MediaTemplate EmbedCab="yes" />
+       
+       <Feature Id="ProductFeature" Title="AutoTranslate" Level="1">
+         <ComponentGroupRef Id="ProductComponents" />
+       </Feature>
+     </Product>
+     
+     <Fragment>
+       <Directory Id="TARGETDIR" Name="SourceDir">
+         <Directory Id="ProgramFilesFolder">
+           <Directory Id="INSTALLFOLDER" Name="AutoTranslate" />
+         </Directory>
+       </Directory>
+     </Fragment>
+     
+     <Fragment>
+       <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+         <Component Id="MainExecutable">
+           <File Source="$(var.SourceDir)\AutoTranslate.exe" />
+         </Component>
+         <!-- Add other components for DLLs and resources -->
+       </ComponentGroup>
+     </Fragment>
+   </Wix>
+   ```
+
+2. **Build MSI**:
+   ```bash
+   # Compile WiX project
+   candle AutoTranslate.wxs -dSourceDir="Deploy\Installer"
+   light AutoTranslate.wixobj -o AutoTranslate.msi
+   ```
+
+#### Alternative: Using Visual Studio Installer Project
+
+1. Add "Microsoft Visual Studio Installer Projects" extension
+2. Create new Setup Project in Visual Studio
+3. Add Primary Output from AutoTranslate project
+4. Configure installer properties (name, version, etc.)
+5. Build to generate .msi file
+
+### Publishing Self-Contained Executable
+
+For a standalone .exe that doesn't require .NET runtime:
+
+```bash
+# Publish as self-contained
+dotnet publish --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true
+```
+
+This creates a single .exe file in:
+`AutoTranslate\bin\Release\net8.0-windows\win-x64\publish\AutoTranslate.exe`
+
+### Code Signing (Optional)
+
+For distribution, sign the executable:
+
+```bash
+# Using Windows SDK signtool
+signtool sign /f "certificate.pfx" /p "password" /t "http://timestamp.comodoca.com" AutoTranslate.exe
+```
+
+### Continuous Integration
+
+Example GitHub Actions workflow (`.github/workflows/build.yml`):
+
+```yaml
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Build
+      run: |
+        dotnet restore
+        dotnet build --configuration Release
+        
+    - name: Create Packages
+      run: deploy.bat
+      
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: AutoTranslate-Release
+        path: Deploy/
+```
+
 ## License
 
 AutoTranslate is open-source software. See LICENSE file for details.
