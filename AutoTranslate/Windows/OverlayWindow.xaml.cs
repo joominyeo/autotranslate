@@ -31,11 +31,12 @@ namespace AutoTranslate
             // Set language information
             UpdateLanguageInfo();
             
-            // Load timeout from configuration
+            // Load configuration and apply appearance settings
             try
             {
                 var config = new ConfigurationManager().LoadConfiguration();
                 _timeoutSeconds = config.OverlayDurationSeconds > 0 ? config.OverlayDurationSeconds : 5;
+                ApplyConfigurationToAppearance(config);
             }
             catch
             {
@@ -312,6 +313,60 @@ namespace AutoTranslate
         {
             StopAllTimers();
             base.OnClosed(e);
+        }
+
+        private void ApplyConfigurationToAppearance(AppConfiguration config)
+        {
+            try
+            {
+                // Apply opacity
+                Opacity = config.OverlayOpacity;
+
+                // Apply colors
+                var backgroundColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(config.OverlayBackgroundColor);
+                var textColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(config.OverlayTextColor);
+                var borderColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(config.OverlayBorderColor);
+
+                Background = new System.Windows.Media.SolidColorBrush(backgroundColor);
+                BorderBrush = new System.Windows.Media.SolidColorBrush(borderColor);
+                BorderThickness = new Thickness(config.OverlayBorderThickness);
+
+                // Apply corner radius
+                var radius = new CornerRadius(config.OverlayCornerRadius);
+                // Note: CornerRadius property might need to be applied to a Border element instead
+
+                // Apply typography
+                FontFamily = new System.Windows.Media.FontFamily(config.OverlayFontFamily);
+                FontSize = config.OverlayFontSize;
+
+                // Apply text color to text blocks
+                var textBrush = new System.Windows.Media.SolidColorBrush(textColor);
+                if (OriginalTextBlock != null) OriginalTextBlock.Foreground = textBrush;
+                if (TranslationTextBlock != null) TranslationTextBlock.Foreground = textBrush;
+                if (LanguageInfoTextBlock != null) LanguageInfoTextBlock.Foreground = textBrush;
+                if (TimeoutIndicator != null) TimeoutIndicator.Foreground = textBrush;
+
+                // Apply drop shadow if enabled
+                if (config.OverlayShowDropShadow)
+                {
+                    Effect = new System.Windows.Media.Effects.DropShadowEffect
+                    {
+                        ShadowDepth = 3,
+                        BlurRadius = 8,
+                        Opacity = 0.3,
+                        Color = System.Windows.Media.Colors.Black
+                    };
+                }
+                else
+                {
+                    Effect = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                // If there's an error applying configuration, just use defaults
+                System.Diagnostics.Debug.WriteLine($"Error applying overlay appearance configuration: {ex.Message}");
+            }
         }
     }
 }

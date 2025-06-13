@@ -52,6 +52,9 @@ namespace AutoTranslate
             HotkeyTextBox.Text = config.HotkeyDisplayText;
             StartMinimizedCheckBox.IsChecked = config.StartMinimized;
 
+            // Sync startup with Windows setting
+            StartupManager.SyncWithConfiguration(config);
+
             if (config.StartMinimized)
             {
                 WindowState = WindowState.Minimized;
