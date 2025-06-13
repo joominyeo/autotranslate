@@ -1,0 +1,93 @@
+<Window x:Class="AutoTranslate.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
+        mc:Ignorable="d"
+        Title="AutoTranslate" Height="500" Width="700"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen"
+        StateChanged="Window_StateChanged"
+        Closing="Window_Closing">
+    
+    <Window.Resources>
+        <ContextMenu x:Key="NotifierContextMenu" Placement="MousePoint">
+            <MenuItem Header="Open" Click="MenuOpen_Click" FontWeight="Bold" />
+            <Separator />
+            <MenuItem Header="Settings" Click="MenuSettings_Click" />
+            <Separator />
+            <MenuItem Header="Exit" Click="MenuExit_Click" />
+        </ContextMenu>
+    </Window.Resources>
+    
+    <Grid>
+        <tb:TaskbarIcon Name="MyNotifyIcon"
+                        Visibility="Visible"
+                        ToolTipText="AutoTranslate - Real-time Translation"
+                        IconSource="/icon.ico"
+                        ContextMenu="{StaticResource NotifierContextMenu}"
+                        TrayMouseDoubleClick="MyNotifyIcon_TrayMouseDoubleClick" />
+        
+        <DockPanel>
+            <Menu DockPanel.Dock="Top">
+                <MenuItem Header="_File">
+                    <MenuItem Header="_Settings" Click="MenuSettings_Click" />
+                    <Separator />
+                    <MenuItem Header="_Hide to Tray" Click="MenuHide_Click" />
+                    <MenuItem Header="E_xit" Click="MenuExit_Click" />
+                </MenuItem>
+                <MenuItem Header="_Help">
+                    <MenuItem Header="_About" Click="MenuAbout_Click" />
+                </MenuItem>
+            </Menu>
+            
+            <Grid Margin="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                
+                <GroupBox Header="Configuration" Grid.Row="0" Margin="0,0,0,10">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Grid.Row="0" Grid.Column="0" Content="Source Language:" />
+                        <ComboBox Grid.Row="0" Grid.Column="1" Name="SourceLanguageCombo" Margin="5,0" />
+                        
+                        <Label Grid.Row="1" Grid.Column="0" Content="Target Language:" />
+                        <ComboBox Grid.Row="1" Grid.Column="1" Name="TargetLanguageCombo" Margin="5,0" />
+                        
+                        <Label Grid.Row="2" Grid.Column="0" Content="Translation Hotkey:" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Name="HotkeyTextBox" Margin="5,0" IsReadOnly="True" />
+                        <Button Grid.Row="2" Grid.Column="2" Name="SetHotkeyButton" Content="Set" Click="SetHotkey_Click" Margin="5,0,0,0" />
+                        
+                        <CheckBox Grid.Row="3" Grid.Column="1" Name="StartMinimizedCheckBox" Content="Start minimized to tray" Margin="5,5,0,0" />
+                    </Grid>
+                </GroupBox>
+                
+                <GroupBox Header="Translation Log" Grid.Row="1">
+                    <ScrollViewer>
+                        <TextBlock Name="LogTextBlock" Background="Transparent" TextWrapping="Wrap" />
+                    </ScrollViewer>
+                </GroupBox>
+                
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                    <Button Name="ClearLogButton" Content="Clear Log" Click="ClearLog_Click" Margin="0,0,10,0" Padding="10,5" />
+                    <Button Name="SaveSettingsButton" Content="Save Settings" Click="SaveSettings_Click" Padding="10,5" />
+                </StackPanel>
+            </Grid>
+        </DockPanel>
+    </Grid>
+</Window>
