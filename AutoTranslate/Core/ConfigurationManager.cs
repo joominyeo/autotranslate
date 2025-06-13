@@ -86,5 +86,10 @@ namespace AutoTranslate.Core
         public string TranslationService { get; set; } = "GoogleTranslate";
         public int OverlayDurationSeconds { get; set; } = 5;
         public double OverlayOpacity { get; set; } = 0.9;
+        public string GoogleTranslateApiKey { get; set; } = string.Empty;
+        public bool UseOfficialGoogleApi { get; set; } = false;
+        public bool EnableLanguageDetection { get; set; } = true;
+        public bool AutoRestoreClipboard { get; set; } = true;
+        public int MaxTextLength { get; set; } = 5000;
     }
 }

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Linq;
 using AutoTranslate.Core;
 using AutoTranslate.Services;
 
@@ -29,28 +30,16 @@ namespace AutoTranslate
 
         private void InitializeUI()
         {
-            // Initialize language options
-            var languages = new[]
-            {
-                new { Code = "auto", Name = "Auto-detect" },
-                new { Code = "en", Name = "English" },
-                new { Code = "es", Name = "Spanish" },
-                new { Code = "fr", Name = "French" },
-                new { Code = "de", Name = "German" },
-                new { Code = "it", Name = "Italian" },
-                new { Code = "pt", Name = "Portuguese" },
-                new { Code = "ru", Name = "Russian" },
-                new { Code = "ja", Name = "Japanese" },
-                new { Code = "ko", Name = "Korean" },
-                new { Code = "zh", Name = "Chinese" }
-            };
+            // Initialize language options using the comprehensive language manager
+            var allLanguages = LanguageManager.GetAllLanguages().ToList();
+            var translatableLanguages = LanguageManager.GetTranslatableLanguages().ToList();
 
-            SourceLanguageCombo.ItemsSource = languages;
-            SourceLanguageCombo.DisplayMemberPath = "Name";
+            SourceLanguageCombo.ItemsSource = allLanguages;
+            SourceLanguageCombo.DisplayMemberPath = "DisplayName";
             SourceLanguageCombo.SelectedValuePath = "Code";
 
-            TargetLanguageCombo.ItemsSource = languages.Where(l => l.Code != "auto");
-            TargetLanguageCombo.DisplayMemberPath = "Name";
+            TargetLanguageCombo.ItemsSource = translatableLanguages;
+            TargetLanguageCombo.DisplayMemberPath = "DisplayName";
             TargetLanguageCombo.SelectedValuePath = "Code";
         }
 
@@ -92,29 +81,57 @@ namespace AutoTranslate
             {
                 var config = _configManager.LoadConfiguration();
                 var textCapture = new TextCapture();
-                var selectedText = await textCapture.GetSelectedTextAsync();
+                
+                LogMessage("Capturing selected text...");
+                var captureResult = await textCapture.GetSelectedTextAsync();
 
-                if (string.IsNullOrWhiteSpace(selectedText))
+                if (!captureResult.Success)
                 {
-                    LogMessage("No text selected for translation.");
+                    LogMessage($"Text capture failed: {captureResult.ErrorMessage}");
                     return;
                 }
 
-                LogMessage($"Translating: {selectedText.Substring(0, Math.Min(50, selectedText.Length))}...");
+                var selectedText = captureResult.CapturedText;
+                if (string.IsNullOrWhiteSpace(selectedText))
+                {
+                    LogMessage("No text was selected.");
+                    return;
+                }
 
-                var translatedText = await _translationService.TranslateAsync(
+                LogMessage($"Captured text: {selectedText.Substring(0, Math.Min(50, selectedText.Length))}...");
+
+                // Perform translation with enhanced workflow
+                var translationResult = await _translationService.TranslateAsync(
                     selectedText, 
                     config.SourceLanguage, 
                     config.TargetLanguage);
 
-                if (!string.IsNullOrEmpty(translatedText))
+                if (translationResult.Success)
                 {
-                    ShowTranslationOverlay(selectedText, translatedText);
-                    LogMessage($"Translation: {translatedText}");
+                    var sourceLanguageName = LanguageManager.GetLanguageName(translationResult.SourceLanguage);
+                    var targetLanguageName = LanguageManager.GetLanguageName(translationResult.TargetLanguage);
+                    
+                    ShowTranslationOverlay(selectedText, translationResult);
+                    
+                    var methodInfo = string.IsNullOrEmpty(translationResult.Method) ? "" : $" ({translationResult.Method})";
+                    LogMessage($"Translated from {sourceLanguageName} to {targetLanguageName}{methodInfo}: {translationResult.TranslatedText}");
+                    
+                    if (!string.IsNullOrEmpty(translationResult.DetectedSourceLanguage) && 
+                        translationResult.DetectedSourceLanguage != config.SourceLanguage)
+                    {
+                        var detectedLanguageName = LanguageManager.GetLanguageName(translationResult.DetectedSourceLanguage);
+                        LogMessage($"Detected source language: {detectedLanguageName}");
+                    }
                 }
                 else
                 {
-                    LogMessage("Translation failed or returned empty result.");
+                    LogMessage($"Translation failed: {translationResult.ErrorMessage}");
+                }
+
+                // Restore clipboard if configured
+                if (config.AutoRestoreClipboard && !string.IsNullOrEmpty(captureResult.OriginalClipboard))
+                {
+                    await textCapture.RestoreClipboardAsync(captureResult.OriginalClipboard);
                 }
             }
             catch (Exception ex)
@@ -123,10 +140,10 @@ namespace AutoTranslate
             }
         }
 
-        private void ShowTranslationOverlay(string originalText, string translatedText)
+        private void ShowTranslationOverlay(string originalText, TranslationResult translationResult)
         {
             _overlayWindow?.Close();
-            _overlayWindow = new OverlayWindow(originalText, translatedText);
+            _overlayWindow = new OverlayWindow(originalText, translationResult.TranslatedText);
             _overlayWindow.Show();
         }
 
@@ -182,9 +199,16 @@ namespace AutoTranslate
 
         private void MenuSettings_Click(object sender, RoutedEventArgs e)
         {
-            Show();
-            WindowState = WindowState.Normal;
-            Activate();
+            var settingsWindow = new Windows.SettingsWindow();
+            settingsWindow.Owner = this;
+            
+            if (settingsWindow.ShowDialog() == true)
+            {
+                // Reload settings and update UI
+                LoadSettings();
+                RegisterHotkeys();
+                LogMessage("Settings updated successfully.");
+            }
         }
 
         private void MenuExit_Click(object sender, RoutedEventArgs e)

@@ -1,0 +1,153 @@
+<Window x:Class="AutoTranslate.Windows.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AutoTranslate Settings" Height="600" Width="500"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    
+    <ScrollViewer>
+        <StackPanel Margin="20">
+            
+            <!-- Languages Section -->
+            <GroupBox Header="Language Settings" Margin="0,0,0,15">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <Label Grid.Row="0" Grid.Column="0" Content="Source Language:" VerticalAlignment="Center" />
+                    <ComboBox Grid.Row="0" Grid.Column="1" Name="SourceLanguageCombo" Margin="10,5" Height="25" />
+                    
+                    <Label Grid.Row="1" Grid.Column="0" Content="Target Language:" VerticalAlignment="Center" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" Name="TargetLanguageCombo" Margin="10,5" Height="25" />
+                    
+                    <CheckBox Grid.Row="2" Grid.Column="1" Name="EnableLanguageDetectionCheckBox" 
+                              Content="Enable automatic language detection" Margin="10,10,10,5" />
+                </Grid>
+            </GroupBox>
+            
+            <!-- Translation API Section -->
+            <GroupBox Header="Translation Service" Margin="0,0,0,15">
+                <StackPanel Margin="10">
+                    <CheckBox Name="UseOfficialGoogleApiCheckBox" Content="Use Official Google Translate API" 
+                              Margin="0,0,0,10" Checked="UseOfficialApiCheckBox_Checked" Unchecked="UseOfficialApiCheckBox_Unchecked" />
+                    
+                    <StackPanel Name="ApiKeyPanel" IsEnabled="False">
+                        <Label Content="Google Translate API Key:" />
+                        <PasswordBox Name="ApiKeyPasswordBox" Margin="0,0,0,5" Height="25" />
+                        <TextBlock Text="Get your API key from Google Cloud Console" 
+                                   FontSize="10" Foreground="Gray" Margin="0,0,0,10" />
+                        
+                        <Button Name="TestApiKeyButton" Content="Test API Key" 
+                                Click="TestApiKey_Click" Padding="10,5" Margin="0,0,0,10" 
+                                HorizontalAlignment="Left" />
+                        
+                        <TextBlock Name="ApiTestResultTextBlock" FontSize="10" Margin="0,0,0,10" />
+                    </StackPanel>
+                    
+                    <TextBlock Text="Note: Without an API key, the app uses free public endpoints which may have limitations." 
+                               FontSize="10" Foreground="Orange" TextWrapping="Wrap" />
+                </StackPanel>
+            </GroupBox>
+            
+            <!-- Hotkey Section -->
+            <GroupBox Header="Hotkey Settings" Margin="0,0,0,15">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <Label Grid.Row="0" Grid.Column="0" Content="Translation Hotkey:" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="0" Grid.Column="1" Name="HotkeyTextBox" Margin="10,5" Height="25" IsReadOnly="True" />
+                    <Button Grid.Row="0" Grid.Column="2" Name="SetHotkeyButton" Content="Change" 
+                            Click="SetHotkey_Click" Padding="10,5" Margin="5,5,0,5" />
+                </Grid>
+            </GroupBox>
+            
+            <!-- Behavior Section -->
+            <GroupBox Header="Behavior Settings" Margin="0,0,0,15">
+                <StackPanel Margin="10">
+                    <CheckBox Name="StartMinimizedCheckBox" Content="Start minimized to system tray" Margin="0,0,0,5" />
+                    <CheckBox Name="AutoRestoreClipboardCheckBox" Content="Automatically restore clipboard after translation" Margin="0,0,0,5" />
+                    
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Grid.Column="0" Content="Max text length:" VerticalAlignment="Center" />
+                        <Slider Grid.Column="1" Name="MaxTextLengthSlider" Minimum="100" Maximum="10000" 
+                                Value="5000" TickFrequency="1000" IsSnapToTickEnabled="True" 
+                                Margin="10,0" VerticalAlignment="Center" 
+                                ValueChanged="MaxTextLengthSlider_ValueChanged" />
+                        <TextBlock Grid.Column="2" Name="MaxTextLengthLabel" Text="5000" 
+                                   VerticalAlignment="Center" MinWidth="40" />
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+            
+            <!-- Overlay Section -->
+            <GroupBox Header="Overlay Settings" Margin="0,0,0,15">
+                <StackPanel Margin="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Grid.Column="0" Content="Auto-close duration:" VerticalAlignment="Center" />
+                        <Slider Grid.Column="1" Name="OverlayDurationSlider" Minimum="3" Maximum="15" 
+                                Value="8" TickFrequency="1" IsSnapToTickEnabled="True" 
+                                Margin="10,0" VerticalAlignment="Center" 
+                                ValueChanged="OverlayDurationSlider_ValueChanged" />
+                        <TextBlock Grid.Column="2" Name="OverlayDurationLabel" Text="8s" 
+                                   VerticalAlignment="Center" MinWidth="30" />
+                    </Grid>
+                    
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Grid.Column="0" Content="Overlay opacity:" VerticalAlignment="Center" />
+                        <Slider Grid.Column="1" Name="OverlayOpacitySlider" Minimum="0.3" Maximum="1.0" 
+                                Value="0.9" TickFrequency="0.1" IsSnapToTickEnabled="True" 
+                                Margin="10,0" VerticalAlignment="Center" 
+                                ValueChanged="OverlayOpacitySlider_ValueChanged" />
+                        <TextBlock Grid.Column="2" Name="OverlayOpacityLabel" Text="90%" 
+                                   VerticalAlignment="Center" MinWidth="30" />
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+            
+            <!-- Buttons -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                <Button Name="ResetButton" Content="Reset to Defaults" Click="Reset_Click" 
+                        Padding="15,8" Margin="0,0,10,0" />
+                <Button Name="CancelButton" Content="Cancel" Click="Cancel_Click" 
+                        Padding="15,8" Margin="0,0,10,0" IsCancel="True" />
+                <Button Name="SaveButton" Content="Save" Click="Save_Click" 
+                        Padding="15,8" IsDefault="True" />
+            </StackPanel>
+            
+        </StackPanel>
+    </ScrollViewer>
+</Window>
