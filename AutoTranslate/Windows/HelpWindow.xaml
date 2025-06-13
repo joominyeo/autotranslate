@@ -1,0 +1,209 @@
+<Window x:Class="AutoTranslate.Windows.HelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AutoTranslate Help" Height="500" Width="600"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="#F5F5F5">
+    
+    <Window.Resources>
+        <Style x:Key="HeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#2E3440"/>
+            <Setter Property="Margin" Value="0,0,0,15"/>
+        </Style>
+        
+        <Style x:Key="SubHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#4C566A"/>
+            <Setter Property="Margin" Value="0,15,0,8"/>
+        </Style>
+        
+        <Style x:Key="ContentStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#4C566A"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+        
+        <Style x:Key="KeyStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas, Courier New"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Background" Value="#E5E9F0"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="Margin" Value="2,0"/>
+        </Style>
+    </Window.Resources>
+    
+    <TabControl Margin="15">
+        
+        <!-- Getting Started Tab -->
+        <TabItem Header="Getting Started">
+            <ScrollViewer>
+                <StackPanel Margin="15">
+                    
+                    <TextBlock Text="Quick Start Guide" Style="{StaticResource HeaderStyle}"/>
+                    
+                    <TextBlock Text="1. Basic Translation" Style="{StaticResource SubHeaderStyle}"/>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="• Select any text anywhere on your screen" Style="{StaticResource ContentStyle}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="• Press " Style="{StaticResource ContentStyle}"/>
+                            <TextBlock Name="HotkeyTextBlock" Text="Ctrl + Shift + T" Style="{StaticResource KeyStyle}"/>
+                            <TextBlock Text=" (or your custom hotkey)" Style="{StaticResource ContentStyle}"/>
+                        </StackPanel>
+                        <TextBlock Text="• Translation appears in a customizable overlay" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Click the overlay to copy the translation" Style="{StaticResource ContentStyle}"/>
+                    </StackPanel>
+                    
+                    <TextBlock Text="2. Customize Settings" Style="{StaticResource SubHeaderStyle}"/>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="• Access settings via File → Settings or system tray" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Configure languages, hotkeys, and appearance" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Add your Google Translate API key for better reliability" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Customize overlay colors, fonts, and duration" Style="{StaticResource ContentStyle}"/>
+                    </StackPanel>
+                    
+                    <TextBlock Text="3. Advanced Features" Style="{StaticResource SubHeaderStyle}"/>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="• Enable translation caching for faster repeated translations" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• View translation history and usage statistics" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Configure startup with Windows for always-on translation" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Export/import settings to share configurations" Style="{StaticResource ContentStyle}"/>
+                    </StackPanel>
+                    
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        
+        <!-- Keyboard Shortcuts Tab -->
+        <TabItem Header="Keyboard Shortcuts">
+            <ScrollViewer>
+                <StackPanel Margin="15">
+                    
+                    <TextBlock Text="Keyboard Shortcuts" Style="{StaticResource HeaderStyle}"/>
+                    
+                    <TextBlock Text="Global Shortcuts" Style="{StaticResource SubHeaderStyle}"/>
+                    <Grid Margin="15,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                            <TextBlock Name="GlobalHotkeyTextBlock" Text="Ctrl + Shift + T" Style="{StaticResource KeyStyle}"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Translate selected text" Style="{StaticResource ContentStyle}" VerticalAlignment="Center"/>
+                    </Grid>
+                    
+                    <TextBlock Text="Application Shortcuts" Style="{StaticResource SubHeaderStyle}"/>
+                    <Grid Margin="15,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Alt + F4" Style="{StaticResource KeyStyle}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Close application" Style="{StaticResource ContentStyle}" VerticalAlignment="Center"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="F1" Style="{StaticResource KeyStyle}"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Show this help window" Style="{StaticResource ContentStyle}" VerticalAlignment="Center"/>
+                        
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl + ," Style="{StaticResource KeyStyle}"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="Open settings (when focused)" Style="{StaticResource ContentStyle}" VerticalAlignment="Center"/>
+                        
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Escape" Style="{StaticResource KeyStyle}"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="Close overlay window" Style="{StaticResource ContentStyle}" VerticalAlignment="Center"/>
+                        
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Ctrl + C" Style="{StaticResource KeyStyle}"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="Copy translation (when overlay focused)" Style="{StaticResource ContentStyle}" VerticalAlignment="Center"/>
+                    </Grid>
+                    
+                    <TextBlock Text="Overlay Interactions" Style="{StaticResource SubHeaderStyle}"/>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="• Click anywhere on overlay to copy translation" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Drag overlay to move it to different position" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Click the × button to close overlay manually" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Overlay auto-closes after configured duration" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Interacting with overlay resets the auto-close timer" Style="{StaticResource ContentStyle}"/>
+                    </StackPanel>
+                    
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        
+        <!-- Troubleshooting Tab -->
+        <TabItem Header="Troubleshooting">
+            <ScrollViewer>
+                <StackPanel Margin="15">
+                    
+                    <TextBlock Text="Common Issues &amp; Solutions" Style="{StaticResource HeaderStyle}"/>
+                    
+                    <TextBlock Text="Translation Not Working" Style="{StaticResource SubHeaderStyle}"/>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="• Ensure you have selected text before pressing the hotkey" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Check your internet connection" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Try a different translation service in settings" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Verify your API key if using Google Translate API" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Check the log files for detailed error information" Style="{StaticResource ContentStyle}"/>
+                    </StackPanel>
+                    
+                    <TextBlock Text="Hotkey Not Responding" Style="{StaticResource SubHeaderStyle}"/>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="• Another application might be using the same hotkey" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Try changing the hotkey in Settings → Hotkeys &amp; Behavior" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Restart the application as administrator if needed" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Ensure the application is running (check system tray)" Style="{StaticResource ContentStyle}"/>
+                    </StackPanel>
+                    
+                    <TextBlock Text="Overlay Not Appearing" Style="{StaticResource SubHeaderStyle}"/>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="• Check if overlay opacity is set too low" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Overlay might be appearing off-screen - try changing display settings" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Disable any screen recording or overlay software temporarily" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Reset overlay settings to defaults" Style="{StaticResource ContentStyle}"/>
+                    </StackPanel>
+                    
+                    <TextBlock Text="Performance Issues" Style="{StaticResource SubHeaderStyle}"/>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="• Enable translation caching in settings" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Reduce maximum text length if translating large texts" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Disable unnecessary features like clipboard monitoring" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Close other applications consuming network bandwidth" Style="{StaticResource ContentStyle}"/>
+                    </StackPanel>
+                    
+                    <TextBlock Text="Getting Help" Style="{StaticResource SubHeaderStyle}"/>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="• Check log files in the configuration folder" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Reset all settings to defaults if problems persist" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Ensure Windows and .NET are up to date" Style="{StaticResource ContentStyle}"/>
+                        <TextBlock Text="• Try running as administrator for permission issues" Style="{StaticResource ContentStyle}"/>
+                    </StackPanel>
+                    
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        
+    </TabControl>
+    
+    <!-- Close Button -->
+    <Button Name="CloseButton" Content="Close" Click="Close_Click" 
+            Padding="20,8" Margin="15" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+            Background="#5E81AC" Foreground="White" BorderThickness="0"
+            MinWidth="100"/>
+    
+</Window>

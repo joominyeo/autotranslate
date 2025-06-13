@@ -19,13 +19,21 @@ namespace AutoTranslate
         {
             InitializeComponent();
             
+            // Initialize logging first
+            Logger.LogStartup();
+            
             _hotkeyManager = new HotkeyManager(this);
             _configManager = new ConfigurationManager();
             _translationService = new TranslationService();
             
+            // Record application start
+            _translationService.GetStatistics().RecordApplicationStart();
+            
             InitializeUI();
             LoadSettings();
             RegisterHotkeys();
+            
+            Logger.Info("MainWindow initialized successfully");
         }
 
         private void InitializeUI()
@@ -175,11 +183,22 @@ namespace AutoTranslate
             {
                 e.Cancel = true;
                 Hide();
+                Logger.Debug("Window minimized to tray");
                 return;
             }
 
-            _hotkeyManager?.Dispose();
-            _overlayWindow?.Close();
+            try
+            {
+                Logger.Info("Application shutting down");
+                _hotkeyManager?.Dispose();
+                _overlayWindow?.Close();
+                _translationService?.Dispose();
+                Logger.LogShutdown();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Error during application shutdown", ex);
+            }
         }
 
         private void MyNotifyIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
@@ -221,10 +240,35 @@ namespace AutoTranslate
             Close();
         }
 
+        private void MenuHelp_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var helpWindow = new Windows.HelpWindow();
+                helpWindow.Owner = this;
+                helpWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Error opening help window", ex);
+                ErrorHandler.HandleException(ex, "Opening Help Window");
+            }
+        }
+
         private void MenuAbout_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("AutoTranslate v1.0\nReal-time text translation with global hotkeys\n\nPress your configured hotkey while text is selected to translate it.", 
-                "About AutoTranslate", MessageBoxButton.OK, MessageBoxImage.Information);
+            try
+            {
+                var aboutWindow = new Windows.AboutWindow();
+                aboutWindow.Owner = this;
+                aboutWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Error opening about window", ex);
+                MessageBox.Show("AutoTranslate v1.0\nReal-time text translation with global hotkeys\n\nPress your configured hotkey while text is selected to translate it.", 
+                    "About AutoTranslate", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private void SetHotkey_Click(object sender, RoutedEventArgs e)

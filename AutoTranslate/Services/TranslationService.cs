@@ -13,6 +13,9 @@ namespace AutoTranslate.Services
         private readonly HttpClient _httpClient;
         private readonly string _userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
         private readonly ConfigurationManager _configManager;
+        private readonly TranslationCache _cache;
+        private readonly TranslationHistory _history;
+        private readonly UsageStatistics _statistics;
         private DateTime _lastRequestTime = DateTime.MinValue;
         private readonly TimeSpan _rateLimitDelay = TimeSpan.FromMilliseconds(100);
 
@@ -22,30 +25,48 @@ namespace AutoTranslate.Services
             _httpClient.DefaultRequestHeaders.Add("User-Agent", _userAgent);
             _httpClient.Timeout = TimeSpan.FromSeconds(10);
             _configManager = new ConfigurationManager();
+            _cache = new TranslationCache();
+            _history = new TranslationHistory();
+            _statistics = new UsageStatistics();
+            
+            // Load timeout from configuration
+            try
+            {
+                var config = _configManager.LoadConfiguration();
+                _httpClient.Timeout = TimeSpan.FromSeconds(config.TranslationTimeoutSeconds);
+            }
+            catch
+            {
+                _httpClient.Timeout = TimeSpan.FromSeconds(10);
+            }
         }
 
         public async Task<TranslationResult> TranslateAsync(string text, string sourceLanguage, string targetLanguage)
         {
+            var startTime = DateTime.Now;
             var result = new TranslationResult();
             
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                result.Success = false;
-                result.ErrorMessage = "Input text is empty";
-                return result;
-            }
-
-            if (text.Length > 5000)
-            {
-                result.Success = false;
-                result.ErrorMessage = "Text too long (max 5000 characters)";
-                return result;
-            }
-
             try
             {
-                // Rate limiting
-                await EnforceRateLimitAsync();
+                Logger.Debug($"Translation request: '{text.Substring(0, Math.Min(50, text.Length))}...' ({sourceLanguage} -> {targetLanguage})");
+                
+                // Validate input
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    result.Success = false;
+                    result.ErrorMessage = "Input text is empty";
+                    _statistics.RecordTranslation(sourceLanguage, targetLanguage, 0, false);
+                    return result;
+                }
+
+                var config = _configManager.LoadConfiguration();
+                if (text.Length > config.MaxTextLength)
+                {
+                    result.Success = false;
+                    result.ErrorMessage = $"Text too long (max {config.MaxTextLength} characters)";
+                    _statistics.RecordTranslation(sourceLanguage, targetLanguage, text.Length, false);
+                    return result;
+                }
 
                 // Detect source language if auto
                 var detectedSourceLang = sourceLanguage;
@@ -53,6 +74,7 @@ namespace AutoTranslate.Services
                 {
                     detectedSourceLang = await DetectLanguageAsync(text);
                     result.DetectedSourceLanguage = detectedSourceLang;
+                    Logger.Debug($"Detected language: {detectedSourceLang}");
                 }
 
                 // Skip translation if source and target are the same
@@ -63,48 +85,117 @@ namespace AutoTranslate.Services
                     result.SourceLanguage = detectedSourceLang;
                     result.TargetLanguage = targetLanguage;
                     result.Method = "No translation needed";
+                    
+                    _statistics.RecordTranslation(detectedSourceLang, targetLanguage, text.Length, true);
+                    _history.AddTranslation(text, text, detectedSourceLang, targetLanguage);
+                    
+                    Logger.Info("Translation skipped - same source and target language");
                     return result;
                 }
 
-                // Try Google Translate first
-                try
+                // Check cache first
+                if (_cache.TryGetTranslation(text, detectedSourceLang, targetLanguage, out var cachedEntry))
                 {
-                    var translation = await TranslateWithGoogleAsync(text, detectedSourceLang, targetLanguage);
                     result.Success = true;
-                    result.TranslatedText = translation;
+                    result.TranslatedText = cachedEntry.TranslatedText;
                     result.SourceLanguage = detectedSourceLang;
                     result.TargetLanguage = targetLanguage;
-                    result.Method = "Google Translate";
+                    result.Method = "Cache";
+                    
+                    _statistics.RecordTranslation(detectedSourceLang, targetLanguage, text.Length, true);
+                    _history.AddTranslation(text, cachedEntry.TranslatedText, detectedSourceLang, targetLanguage);
+                    
+                    Logger.Info("Translation served from cache");
                     return result;
                 }
-                catch (Exception googleEx)
+
+                // Perform translation with retry logic
+                var maxRetries = config.MaxRetryAttempts;
+                Exception lastException = null;
+
+                for (int attempt = 1; attempt <= maxRetries + 1; attempt++)
                 {
-                    result.ErrorMessage = $"Google Translate failed: {googleEx.Message}";
-                    
-                    // Fallback to LibreTranslate
                     try
                     {
-                        var translation = await TranslateWithLibreTranslateAsync(text, detectedSourceLang, targetLanguage);
+                        if (attempt > 1)
+                        {
+                            var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 2)); // Exponential backoff
+                            Logger.Warning($"Translation attempt {attempt} after {delay.TotalSeconds}s delay");
+                            await Task.Delay(delay);
+                        }
+
+                        // Rate limiting
+                        await EnforceRateLimitAsync();
+
+                        string translation;
+                        string method;
+
+                        // Try Google Translate first
+                        try
+                        {
+                            translation = await TranslateWithGoogleAsync(text, detectedSourceLang, targetLanguage);
+                            method = "Google Translate";
+                        }
+                        catch (Exception googleEx)
+                        {
+                            Logger.Warning($"Google Translate failed: {googleEx.Message}");
+                            
+                            // Fallback to LibreTranslate
+                            translation = await TranslateWithLibreTranslateAsync(text, detectedSourceLang, targetLanguage);
+                            method = "LibreTranslate (Fallback)";
+                        }
+
+                        // Success!
                         result.Success = true;
                         result.TranslatedText = translation;
                         result.SourceLanguage = detectedSourceLang;
                         result.TargetLanguage = targetLanguage;
-                        result.Method = "LibreTranslate";
-                        result.ErrorMessage = null;
+                        result.Method = method;
+
+                        // Add to cache and history
+                        _cache.AddTranslation(text, translation, detectedSourceLang, targetLanguage);
+                        _history.AddTranslation(text, translation, detectedSourceLang, targetLanguage);
+                        _statistics.RecordTranslation(detectedSourceLang, targetLanguage, text.Length, true);
+
+                        var duration = DateTime.Now - startTime;
+                        Logger.Info($"Translation successful via {method} in {duration.TotalMilliseconds:F0}ms (attempt {attempt})");
                         return result;
                     }
-                    catch (Exception libreEx)
+                    catch (Exception ex)
                     {
-                        result.Success = false;
-                        result.ErrorMessage = $"All translation services failed. Google: {googleEx.Message}, LibreTranslate: {libreEx.Message}";
-                        return result;
+                        lastException = ex;
+                        Logger.Warning($"Translation attempt {attempt} failed: {ex.Message}");
+
+                        if (attempt <= maxRetries && ErrorHandler.ShouldRetry(ex, attempt, maxRetries))
+                        {
+                            continue; // Retry
+                        }
+                        else
+                        {
+                            break; // Don't retry
+                        }
                     }
                 }
+
+                // All attempts failed
+                result.Success = false;
+                result.ErrorMessage = lastException?.Message ?? "Translation failed after all retry attempts";
+                _statistics.RecordTranslation(detectedSourceLang, targetLanguage, text.Length, false);
+                
+                var totalDuration = DateTime.Now - startTime;
+                Logger.Error($"Translation failed after {maxRetries + 1} attempts in {totalDuration.TotalSeconds:F1}s", lastException);
+                
+                ErrorHandler.HandleException(lastException, "Translation", false);
+                return result;
             }
             catch (Exception ex)
             {
                 result.Success = false;
-                result.ErrorMessage = $"Translation failed: {ex.Message}";
+                result.ErrorMessage = $"Unexpected error: {ex.Message}";
+                _statistics.RecordTranslation(sourceLanguage, targetLanguage, text?.Length ?? 0, false);
+                
+                Logger.Error("Unexpected error in TranslateAsync", ex);
+                ErrorHandler.HandleException(ex, "Translation");
                 return result;
             }
         }
@@ -308,8 +399,13 @@ namespace AutoTranslate.Services
         public void Dispose()
         {
             _httpClient?.Dispose();
+            _cache?.Dispose();
             GC.SuppressFinalize(this);
         }
+
+        public TranslationCache GetCache() => _cache;
+        public TranslationHistory GetHistory() => _history;
+        public UsageStatistics GetStatistics() => _statistics;
     }
 
     public class TranslationResult

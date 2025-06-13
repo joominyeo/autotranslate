@@ -38,6 +38,8 @@
                     <MenuItem Header="E_xit" Click="MenuExit_Click" />
                 </MenuItem>
                 <MenuItem Header="_Help">
+                    <MenuItem Header="_Help Topics" Click="MenuHelp_Click" InputGestureText="F1" />
+                    <Separator />
                     <MenuItem Header="_About" Click="MenuAbout_Click" />
                 </MenuItem>
             </Menu>

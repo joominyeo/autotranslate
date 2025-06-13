@@ -1,25 +1,261 @@
 # AutoTranslate
 
-A Windows desktop application for real-time text translation with global hotkeys.
+A powerful Windows application for real-time text translation with global hotkeys and customizable overlay display.
 
 ## Features
 
-- **Global Hotkeys**: Translate selected text from any application using customizable keyboard shortcuts
-- **System Tray Integration**: Runs minimized in the background for quick access
-- **Multiple Translation Services**: Supports Google Translate and LibreTranslate APIs
-- **Overlay Display**: Shows translations in an elegant overlay window near your cursor
-- **Configurable Settings**: Customize languages, hotkeys, and behavior
-- **Text Capture**: Automatically captures selected text from any Windows application
+- **Global Hotkey Support**: Translate selected text instantly from any application
+- **100+ Languages**: Support for all major languages with automatic detection
+- **Customizable Overlay**: Personalize appearance, colors, fonts, and animations
+- **Multiple Translation Services**: Google Translate and LibreTranslate with automatic fallback
+- **Smart Caching**: Avoid duplicate API calls with intelligent translation caching
+- **Usage Statistics**: Track your translation habits and productivity
+- **System Tray Integration**: Always available without cluttering your desktop
+- **Comprehensive Settings**: Extensive customization options for every preference
+- **Export/Import Settings**: Share configurations between devices
 
-## How to Use
+## Quick Start
 
-1. **Installation**: Build and run the application
-2. **Configuration**: Set your preferred source and target languages
-3. **Hotkey Setup**: Configure your translation hotkey (default: Ctrl + Shift + T)
-4. **Translation**: 
-   - Select any text in any application
-   - Press your configured hotkey
-   - View the translation in the overlay window
+1. **Download and Install** AutoTranslate from the releases page
+2. **Launch the application** - it will appear in your system tray
+3. **Select any text** anywhere on your screen
+4. **Press `Ctrl + Shift + T`** (default hotkey) to translate
+5. **View the translation** in the overlay window
+6. **Click the overlay** to copy the translation to clipboard
+
+## System Requirements
+
+- Windows 10 or Windows 11
+- .NET 8.0 Runtime (automatically installed)
+- Internet connection for translation services
+- 50 MB free disk space
+
+## Installation
+
+### Automatic Installer (Recommended)
+1. Download `AutoTranslate-Setup.exe` from the latest release
+2. Run the installer and follow the setup wizard
+3. Launch AutoTranslate from the Start Menu or desktop shortcut
+
+### Manual Installation
+1. Download `AutoTranslate-Portable.zip`
+2. Extract to your preferred folder
+3. Run `AutoTranslate.exe`
+4. Optionally enable "Start with Windows" in settings
+
+## Configuration
+
+### API Key Setup (Recommended)
+
+For the best translation quality and reliability, configure a Google Translate API key:
+
+1. Visit [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the "Cloud Translation API"
+4. Create credentials (API Key)
+5. In AutoTranslate: **Settings → Language & Translation → Use Official Google Translate API**
+6. Enter your API key and click "Test API Key"
+
+> **Note**: Without an API key, AutoTranslate uses free public endpoints which may have limitations.
+
+### Hotkey Customization
+
+1. Open **Settings → Hotkeys & Behavior**
+2. Click **"Change"** next to "Translation Hotkey"
+3. Press your desired key combination
+4. Click **"OK"** to save
+
+### Overlay Appearance
+
+Customize the translation overlay appearance:
+
+1. Open **Settings → Overlay Appearance**
+2. Adjust colors, fonts, opacity, and effects
+3. Use the **live preview** to see changes in real-time
+4. Configure auto-close duration and border styles
+
+## Usage Guide
+
+### Basic Translation
+- Select text in any application
+- Press your configured hotkey (`Ctrl + Shift + T` by default)
+- Translation appears in an overlay window
+- Click the overlay to copy translation
+- Overlay auto-closes after configured duration
+
+### Advanced Features
+
+#### Translation History
+View your recent translations:
+- **About → Usage Statistics** for summary
+- Translation history is automatically saved
+- Search through past translations
+
+#### Caching
+- Repeated translations are served from cache instantly
+- Cache expires based on your settings
+- Improves performance and reduces API usage
+
+#### Startup with Windows
+- **Settings → Hotkeys & Behavior → Start with Windows**
+- Application starts automatically when Windows boots
+- Begins minimized to system tray
+
+#### Sound Notifications
+- **Settings → Notifications → Enable sound notifications**
+- Choose custom sound files for translation events
+- Configure different sounds for success/error states
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl + Shift + T` | Translate selected text (configurable) |
+| `F1` | Show help window |
+| `Escape` | Close overlay window |
+| `Ctrl + C` | Copy translation (when overlay focused) |
+| `Alt + F4` | Close application |
+
+## Troubleshooting
+
+### Translation Not Working
+
+**Check Internet Connection**
+- Ensure stable internet connectivity
+- Try translating simple text first
+
+**Verify Text Selection**
+- Make sure text is properly selected before pressing hotkey
+- Some applications may not support text selection
+
+**API Key Issues**
+- Test your API key in Settings → Language & Translation
+- Ensure the API key has Translation API permissions
+- Check Google Cloud Console for usage limits
+
+### Hotkey Not Responding
+
+**Hotkey Conflicts**
+- Another application might be using the same hotkey
+- Change hotkey in Settings → Hotkeys & Behavior
+- Try administrator privileges if needed
+
+**Application Status**
+- Check if AutoTranslate is running (system tray icon)
+- Restart the application if needed
+
+### Overlay Not Appearing
+
+**Display Settings**
+- Check if overlay opacity is too low
+- Overlay might be off-screen on multi-monitor setups
+- Reset overlay settings to defaults
+
+**Software Conflicts**
+- Disable other overlay software temporarily
+- Check antivirus software for blocking
+
+### Performance Issues
+
+**Enable Caching**
+- Settings → Hotkeys & Behavior → Enable translation caching
+- Reduces API calls for repeated translations
+
+**Optimize Settings**
+- Reduce max text length for large translations
+- Disable unnecessary features like clipboard monitoring
+- Clear translation cache if it becomes large
+
+## File Locations
+
+### Configuration Files
+```
+%APPDATA%\AutoTranslate\
+├── config.json              # Application settings
+├── translation_cache.json   # Translation cache
+├── translation_history.json # Translation history
+├── usage_statistics.json    # Usage analytics
+└── Logs\                    # Application logs
+    └── autotranslate_YYYY-MM-DD.log
+```
+
+### Accessing Configuration
+- **Settings → Advanced → Open Config Folder**
+- Manually navigate to `%APPDATA%\AutoTranslate`
+
+## Settings Backup & Restore
+
+### Export Settings
+1. **Settings → Advanced → Export Settings**
+2. Choose location and filename
+3. Share `.ats` file with other devices
+
+### Import Settings
+1. **Settings → Advanced → Import Settings**
+2. Select `.ats` or `.json` configuration file
+3. Confirm to overwrite current settings
+
+## Command Line Options
+
+```bash
+AutoTranslate.exe [options]
+
+Options:
+  --minimized    Start minimized to system tray
+  --config PATH  Use custom configuration file
+  --reset        Reset all settings to defaults
+  --help         Show command line help
+```
+
+## FAQ
+
+**Q: Is AutoTranslate free to use?**
+A: Yes, AutoTranslate is completely free and open-source.
+
+**Q: Do I need a Google API key?**
+A: No, but it's recommended for better reliability and no rate limits.
+
+**Q: Can I use AutoTranslate offline?**
+A: No, internet connection is required for translation services.
+
+**Q: How much data does AutoTranslate use?**
+A: Minimal - only the text being translated is sent to servers.
+
+**Q: Is my text data secure?**
+A: Text is sent to translation services (Google/LibreTranslate) but not stored by AutoTranslate.
+
+**Q: Can I translate images or PDFs?**
+A: Only text content. Extract text from images/PDFs first using OCR tools.
+
+**Q: Does AutoTranslate work with all applications?**
+A: Yes, it works with any application that supports text selection.
+
+## Support
+
+### Getting Help
+- Press `F1` in the application for help topics
+- Check the troubleshooting section above
+- Review log files in the configuration folder
+
+### Reporting Issues
+1. Collect relevant information:
+   - Windows version
+   - AutoTranslate version
+   - Error messages
+   - Log files
+2. Create a detailed issue report
+3. Include steps to reproduce the problem
+
+### Feature Requests
+We welcome suggestions for new features and improvements.
+
+## Privacy Policy
+
+- AutoTranslate only sends text to translation services when you explicitly request translation
+- No personal data is collected or transmitted
+- Usage statistics are stored locally only
+- API keys are stored locally and encrypted
+- Translation history is kept local unless you export it
 
 ## Technical Details
 
@@ -51,16 +287,10 @@ A Windows desktop application for real-time text translation with global hotkeys
 - Windows 10 or later
 - Visual Studio 2022 or compatible IDE
 
-## Usage Notes
+## License
 
-- The application requires administrator privileges for global hotkey registration
-- Translation services have usage limits and may require API keys for heavy usage
-- The overlay window auto-closes after 8 seconds or can be manually closed
-- Settings are automatically saved to the user's AppData folder
+AutoTranslate is open-source software. See LICENSE file for details.
 
-## Translation Services
+---
 
-1. **Google Translate**: Primary service using public API endpoints
-2. **LibreTranslate**: Fallback service for reliability
-
-Both services have usage limitations. For production use, consider obtaining proper API keys.
+**AutoTranslate** - Making language barriers disappear, one translation at a time.

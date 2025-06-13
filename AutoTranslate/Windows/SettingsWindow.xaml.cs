@@ -525,22 +525,37 @@ namespace AutoTranslate.Windows
         {
             var saveFileDialog = new SaveFileDialog
             {
-                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
-                FileName = $"autotranslate-config-backup-{DateTime.Now:yyyy-MM-dd}.json",
-                Title = "Save configuration backup"
+                Filter = "AutoTranslate Settings (*.ats)|*.ats|JSON files (*.json)|*.json|All files (*.*)|*.*",
+                FileName = $"autotranslate-config-backup-{DateTime.Now:yyyy-MM-dd-HHmm}.ats",
+                Title = "Export configuration settings"
             };
 
             if (saveFileDialog.ShowDialog() == true)
             {
                 try
                 {
-                    File.Copy(ConfigLocationTextBox.Text, saveFileDialog.FileName, true);
-                    MessageBox.Show("Configuration backed up successfully!", "Backup Complete", 
+                    // Get current configuration
+                    var currentConfig = _configManager.LoadConfiguration();
+                    
+                    // Add metadata for the export
+                    var exportData = new
+                    {
+                        ExportDate = DateTime.Now,
+                        ExportVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(),
+                        Configuration = currentConfig
+                    };
+                    
+                    var json = JsonConvert.SerializeObject(exportData, Formatting.Indented);
+                    File.WriteAllText(saveFileDialog.FileName, json);
+                    
+                    Logger.Info($"Configuration exported to {saveFileDialog.FileName}");
+                    MessageBox.Show("Configuration exported successfully!", "Export Complete", 
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to backup configuration: {ex.Message}", "Backup Failed", 
+                    Logger.Error("Failed to export configuration", ex);
+                    MessageBox.Show($"Failed to export configuration: {ex.Message}", "Export Failed", 
                         MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
@@ -550,7 +565,7 @@ namespace AutoTranslate.Windows
         {
             var openFileDialog = new OpenFileDialog
             {
-                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                Filter = "AutoTranslate Settings (*.ats)|*.ats|JSON files (*.json)|*.json|All files (*.*)|*.*",
                 Title = "Select configuration backup to restore"
             };
 
@@ -564,13 +579,51 @@ namespace AutoTranslate.Windows
                 {
                     try
                     {
-                        File.Copy(openFileDialog.FileName, ConfigLocationTextBox.Text, true);
-                        LoadSettings(); // Reload settings from restored file
+                        // Read the backup file and validate it
+                        var backupJson = File.ReadAllText(openFileDialog.FileName);
+                        AppConfiguration backupConfig;
+                        
+                        // Try to parse as new format first (with metadata)
+                        try
+                        {
+                            var exportData = JsonConvert.DeserializeObject<dynamic>(backupJson);
+                            if (exportData?.Configuration != null)
+                            {
+                                backupConfig = JsonConvert.DeserializeObject<AppConfiguration>(exportData.Configuration.ToString());
+                            }
+                            else
+                            {
+                                // Fallback to direct configuration format
+                                backupConfig = JsonConvert.DeserializeObject<AppConfiguration>(backupJson);
+                            }
+                        }
+                        catch
+                        {
+                            // Fallback to direct configuration format
+                            backupConfig = JsonConvert.DeserializeObject<AppConfiguration>(backupJson);
+                        }
+                        
+                        if (backupConfig == null)
+                        {
+                            throw new InvalidOperationException("Invalid configuration file format");
+                        }
+
+                        // Validate the configuration before applying
+                        _configManager.ValidateConfiguration(backupConfig);
+                        
+                        // Save the validated configuration
+                        _configManager.SaveConfiguration(backupConfig);
+                        
+                        // Reload settings from restored file
+                        LoadSettings();
+                        
+                        Logger.Info($"Configuration restored from {openFileDialog.FileName}");
                         MessageBox.Show("Configuration restored successfully!", "Restore Complete", 
                             MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
                     {
+                        Logger.Error("Failed to restore configuration", ex);
                         MessageBox.Show($"Failed to restore configuration: {ex.Message}", "Restore Failed", 
                             MessageBoxButton.OK, MessageBoxImage.Error);
                     }
