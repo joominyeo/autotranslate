@@ -1,44 +1,81 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
+using System.Windows.Media.Animation;
+using System.Windows.Forms;
+using AutoTranslate.Core;
 
 namespace AutoTranslate
 {
     public partial class OverlayWindow : Window
     {
         private readonly DispatcherTimer _autoCloseTimer;
+        private readonly DispatcherTimer _countdownTimer;
         private readonly string _translatedText;
+        private readonly string _sourceLanguage;
+        private readonly string _targetLanguage;
+        private int _timeoutSeconds = 5;
+        private int _currentCountdown;
 
-        public OverlayWindow(string originalText, string translatedText)
+        public OverlayWindow(string originalText, string translatedText, string sourceLanguage = "", string targetLanguage = "")
         {
             InitializeComponent();
             
             _translatedText = translatedText;
+            _sourceLanguage = sourceLanguage;
+            _targetLanguage = targetLanguage;
             
             OriginalTextBlock.Text = originalText;
             TranslationTextBlock.Text = translatedText;
             
+            // Set language information
+            UpdateLanguageInfo();
+            
+            // Load timeout from configuration
+            try
+            {
+                var config = new ConfigurationManager().LoadConfiguration();
+                _timeoutSeconds = config.OverlayDurationSeconds > 0 ? config.OverlayDurationSeconds : 5;
+            }
+            catch
+            {
+                _timeoutSeconds = 5; // Default fallback
+            }
+            
+            _currentCountdown = _timeoutSeconds;
+            
             // Auto-close timer
             _autoCloseTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromSeconds(8)
+                Interval = TimeSpan.FromSeconds(_timeoutSeconds)
             };
             _autoCloseTimer.Tick += (s, e) => {
                 _autoCloseTimer.Stop();
-                Close();
+                AnimateOut();
             };
+            
+            // Countdown timer for visual feedback
+            _countdownTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _countdownTimer.Tick += CountdownTimer_Tick;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            // Position window near cursor
+            // Position window near cursor with multi-monitor support
             PositionNearCursor();
             
-            // Start auto-close timer
+            // Start timers
             _autoCloseTimer.Start();
+            _countdownTimer.Start();
             
             // Animate window appearance
             AnimateIn();
+            
+            // Update initial countdown display
+            UpdateCountdownDisplay();
         }
 
         private void PositionNearCursor()
@@ -46,30 +83,45 @@ namespace AutoTranslate
             try
             {
                 var cursorPosition = GetCursorPosition();
-                var screenWidth = SystemParameters.PrimaryScreenWidth;
-                var screenHeight = SystemParameters.PrimaryScreenHeight;
+                var targetScreen = Screen.FromPoint(new System.Drawing.Point((int)cursorPosition.X, (int)cursorPosition.Y));
                 
-                // Calculate desired position (offset from cursor)
-                var left = cursorPosition.X + 20;
-                var top = cursorPosition.Y + 20;
+                // Get screen bounds (working area to avoid taskbar)
+                var workingArea = targetScreen.WorkingArea;
                 
-                // Ensure window stays on screen
-                if (left + Width > screenWidth)
-                    left = screenWidth - Width - 10;
-                if (top + Height > screenHeight)
-                    top = cursorPosition.Y - Height - 10;
+                // Calculate desired position (offset from cursor to avoid covering selected text)
+                var offsetX = 25;
+                var offsetY = 25;
+                var left = cursorPosition.X + offsetX;
+                var top = cursorPosition.Y + offsetY;
                 
-                // Minimum bounds
-                if (left < 0) left = 10;
-                if (top < 0) top = 10;
+                // Ensure window fits within screen bounds
+                if (left + ActualWidth > workingArea.Right)
+                {
+                    left = cursorPosition.X - ActualWidth - offsetX;
+                    if (left < workingArea.Left)
+                        left = workingArea.Right - ActualWidth - 20;
+                }
+                
+                if (top + ActualHeight > workingArea.Bottom)
+                {
+                    top = cursorPosition.Y - ActualHeight - offsetY;
+                    if (top < workingArea.Top)
+                        top = workingArea.Bottom - ActualHeight - 20;
+                }
+                
+                // Final bounds check
+                left = Math.Max(workingArea.Left + 10, Math.Min(left, workingArea.Right - ActualWidth - 10));
+                top = Math.Max(workingArea.Top + 10, Math.Min(top, workingArea.Bottom - ActualHeight - 10));
                 
                 Left = left;
                 Top = top;
             }
             catch
             {
-                // Fallback to center screen
-                WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                // Fallback to center of primary screen
+                var primaryScreen = Screen.PrimaryScreen.WorkingArea;
+                Left = primaryScreen.Left + (primaryScreen.Width - ActualWidth) / 2;
+                Top = primaryScreen.Top + (primaryScreen.Height - ActualHeight) / 2;
             }
         }
 
@@ -86,12 +138,102 @@ namespace AutoTranslate
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern bool GetCursorPos(out System.Drawing.Point lpPoint);
 
+        private void UpdateLanguageInfo()
+        {
+            try
+            {
+                var sourceLanguageName = string.IsNullOrEmpty(_sourceLanguage) ? "Unknown" : 
+                    LanguageManager.GetLanguageName(_sourceLanguage);
+                var targetLanguageName = string.IsNullOrEmpty(_targetLanguage) ? "Unknown" : 
+                    LanguageManager.GetLanguageName(_targetLanguage);
+                
+                LanguageInfoTextBlock.Text = $"{sourceLanguageName} → {targetLanguageName}";
+            }
+            catch
+            {
+                LanguageInfoTextBlock.Text = "Translation";
+            }
+        }
+
+        private void CountdownTimer_Tick(object sender, EventArgs e)
+        {
+            _currentCountdown--;
+            UpdateCountdownDisplay();
+            
+            if (_currentCountdown <= 0)
+            {
+                _countdownTimer.Stop();
+            }
+        }
+
+        private void UpdateCountdownDisplay()
+        {
+            if (_currentCountdown > 0)
+            {
+                TimeoutIndicator.Text = $"⏱ {_currentCountdown}s";
+            }
+            else
+            {
+                TimeoutIndicator.Text = "";
+            }
+        }
+
         private void AnimateIn()
         {
-            // Simple fade-in animation
+            // Enhanced fade-in and scale animation
             Opacity = 0;
-            var animation = new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
-            BeginAnimation(OpacityProperty, animation);
+            Transform = new System.Windows.Media.ScaleTransform(0.8, 0.8);
+            
+            var storyboard = new Storyboard();
+            
+            // Fade in
+            var fadeAnimation = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300))
+            {
+                EasingFunction = new System.Windows.Media.Animation.QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            Storyboard.SetTarget(fadeAnimation, this);
+            Storyboard.SetTargetProperty(fadeAnimation, new PropertyPath(OpacityProperty));
+            storyboard.Children.Add(fadeAnimation);
+            
+            // Scale up
+            var scaleXAnimation = new DoubleAnimation(0.8, 1.0, TimeSpan.FromMilliseconds(300))
+            {
+                EasingFunction = new System.Windows.Media.Animation.BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.3 }
+            };
+            var scaleYAnimation = new DoubleAnimation(0.8, 1.0, TimeSpan.FromMilliseconds(300))
+            {
+                EasingFunction = new System.Windows.Media.Animation.BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.3 }
+            };
+            
+            Storyboard.SetTarget(scaleXAnimation, this);
+            Storyboard.SetTargetProperty(scaleXAnimation, new PropertyPath("RenderTransform.ScaleX"));
+            Storyboard.SetTarget(scaleYAnimation, this);
+            Storyboard.SetTargetProperty(scaleYAnimation, new PropertyPath("RenderTransform.ScaleY"));
+            
+            storyboard.Children.Add(scaleXAnimation);
+            storyboard.Children.Add(scaleYAnimation);
+            
+            RenderTransform = new System.Windows.Media.ScaleTransform();
+            RenderTransformOrigin = new Point(0.5, 0.5);
+            
+            storyboard.Begin();
+        }
+
+        private void AnimateOut()
+        {
+            var storyboard = new Storyboard();
+            
+            // Fade out
+            var fadeAnimation = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(200))
+            {
+                EasingFunction = new System.Windows.Media.Animation.QuadraticEase { EasingMode = EasingMode.EaseIn }
+            };
+            Storyboard.SetTarget(fadeAnimation, this);
+            Storyboard.SetTargetProperty(fadeAnimation, new PropertyPath(OpacityProperty));
+            storyboard.Children.Add(fadeAnimation);
+            
+            storyboard.Completed += (s, e) => Close();
+            storyboard.Begin();
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
@@ -99,49 +241,76 @@ namespace AutoTranslate
             if (e.ChangedButton == MouseButton.Left)
             {
                 // Allow dragging the window
-                DragMove();
+                try
+                {
+                    DragMove();
+                }
+                catch
+                {
+                    // Handle potential exceptions during drag
+                }
                 
-                // Reset auto-close timer when interacting
-                _autoCloseTimer.Stop();
-                _autoCloseTimer.Start();
+                // Reset timers when interacting
+                RestartTimers();
             }
+        }
+
+        private void RestartTimers()
+        {
+            _autoCloseTimer.Stop();
+            _countdownTimer.Stop();
+            
+            _currentCountdown = _timeoutSeconds;
+            UpdateCountdownDisplay();
+            
+            _autoCloseTimer.Start();
+            _countdownTimer.Start();
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            _autoCloseTimer.Stop();
-            Close();
+            StopAllTimers();
+            AnimateOut();
         }
 
         private void CopyButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                Clipboard.SetText(_translatedText);
+                System.Windows.Clipboard.SetText(_translatedText);
                 
-                // Show brief confirmation
-                CopyButton.Content = "Copied!";
-                var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                // Show brief confirmation with animation
+                var originalContent = CopyButton.Content;
+                CopyButton.Content = "✓ Copied!";
+                CopyButton.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(76, 175, 80));
+                
+                var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
                 timer.Tick += (s, args) => {
-                    CopyButton.Content = "Copy";
+                    CopyButton.Content = originalContent;
+                    CopyButton.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(70, 130, 180));
                     timer.Stop();
                 };
                 timer.Start();
                 
-                // Reset auto-close timer
-                _autoCloseTimer.Stop();
-                _autoCloseTimer.Start();
+                // Reset timers when interacting
+                RestartTimers();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to copy text: {ex.Message}", "Error", 
+                System.Windows.MessageBox.Show($"Failed to copy text: {ex.Message}", "Error", 
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        protected override void OnClosed(EventArgs e)
+        private void StopAllTimers()
         {
             _autoCloseTimer?.Stop();
+            _countdownTimer?.Stop();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            StopAllTimers();
             base.OnClosed(e);
         }
     }

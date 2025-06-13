@@ -143,7 +143,8 @@ namespace AutoTranslate
         private void ShowTranslationOverlay(string originalText, TranslationResult translationResult)
         {
             _overlayWindow?.Close();
-            _overlayWindow = new OverlayWindow(originalText, translationResult.TranslatedText);
+            _overlayWindow = new OverlayWindow(originalText, translationResult.TranslatedText, 
+                translationResult.SourceLanguage, translationResult.TargetLanguage);
             _overlayWindow.Show();
         }
 
